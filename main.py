@@ -221,8 +221,8 @@ sm.add_widget(DemoPage(name='demopage'))
 class MovingWaveShadowWidget(Widget):
     def __init__(self, **kwargs):
         super(MovingWaveShadowWidget, self).__init__(**kwargs)
-        self.x_pos = 800  # ตำแหน่งเริ่มต้นของก้อน
-        self.y_pos = 500
+        self.x_pos = 400  # ตำแหน่งเริ่มต้นของก้อน
+        self.y_pos = 300
         self.speed_x = 0.5  # ลดความเร็วในทิศทาง X
         self.speed_y = 0.25  # ลดความเร็วในทิศทาง Y
         self.time = 0  # ใช้สำหรับการทำให้เกิดคลื่น
@@ -322,7 +322,11 @@ class MovingWaveShadowWidget(Widget):
         # คำนวณตำแหน่งกลางเมื่อขนาดหน้าต่างเปลี่ยน
         self.image.pos = ((Window.width - self.image.width) / 2, 0)
 
+
+
 # ------------------------------------------------------------------------------------------------------
+
+
 
 class MapWidget(Widget):
     def __init__(self, **kwargs):
@@ -487,6 +491,7 @@ class ClientsTable(Screen):
         self.add_widget(self.data_tables)
         return layout
         
+        # bluetooth name 
     async def async_scan_devices(self):
         scanner = BleakScanner()
         self.target_device_names = ["P2N_09725", "P2N_09714", "ZLB_39612"]
@@ -505,18 +510,19 @@ sm.add_widget(ClientsTable(name='Clientstable'))
 class MyApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Amber"
+        self.theme_cls.primary_palette = "Pink"
         self.scanning = False
         self.target_device_names = ["P2N_09725", "P2N_09714", "ZLB_39612"]
         return Builder.load_string(KV)
     
     def switch_theme_style(self):
-        self.theme_cls.primary_palette = ("Orange" if self.theme_cls.primary_palette == "Blue" else "Blue")
+        self.theme_cls.primary_palette = ("Pink" if self.theme_cls.primary_palette == "Blue" else "Blue")
         self.theme_cls.theme_style = ("Dark" if self.theme_cls.theme_style == "Light" else "Light")
 
     def close_application(self):
         App.get_running_app().stop()
 
+    # ตรวจสอบว่าขณะนี้กำลังสแกนอุปกรณ์ Bluetooth อยู่หรือไม่ (self.scanning) ถ้าไม่กำลังสแกน จะเริ่มกระบวนการสแกน
     def start_service(self):
         if not self.scanning:
             self.root.ids.label.text = ""  # Clear the previous scan results
@@ -526,20 +532,27 @@ class MyApp(MDApp):
 
     def scan_devices(self):
         self.root.ids.status.text = "Scanning..."
-        devices = asyncio.run(self.async_scan_devices())
+        devices = asyncio.run(self.async_scan_devices()) # เรียกใช้ฟังก์ชัน async_scan_devices ซึ่งเป็นฟังก์ชันแบบ Asynchronous ผ่าน asyncio.run เพื่อค้นหาอุปกรณ์
         Clock.schedule_once(lambda dt: self.display_scan_results(devices), 0)
         self.scanning = False
 
+    # สร้างอินสแตนซ์ของ BleakScanner ซึ่งใช้สำหรับค้นหาอุปกรณ์ Bluetooth LE
     async def async_scan_devices(self):
         scanner = BleakScanner()
-        scanner.device_filter = lambda device: device.name in self.target_device_names
-        return await scanner.discover()
+        # ตั้งค่าฟิลเตอร์ device_filter เพื่อกรองเฉพาะอุปกรณ์ที่มีชื่ออยู่ใน self.target_device_names
+        scanner.device_filter = lambda device: device.name in self.target_device_names 
+        return await scanner.discover() # เริ่มการสแกนอุปกรณ์ Bluetooth และรอจนกว่าการค้นหาจะเสร็จสิ้น
     
+    # คำนวณ ระยะทาง จากค่า RSSI ที่ได้รับจากอุปกรณ์ Bluetooth.
     def calculate_distance(self, rssi, RSSI_0, n):
         ratio = (RSSI_0-rssi)/(10*n)
         return math.pow(10,ratio)
     
-    def trilateration(self, d1, d2, d3, x1, y1, x2, y2, x3, y3):
+    # เพื่อหาตำแหน่ง (x, y) ของจุดที่ไม่ทราบตำแหน่ง โดยใช้ข้อมูลจากระยะทางจาก สามจุดที่มีตำแหน่งที่รู้
+    # d1, d2, d3: ระยะทางจากแต่ละจุด (จากอุปกรณ์ที่รู้ตำแหน่งไปยังจุดที่เราต้องการหาตำแหน่ง)
+    # x1, y1, x2, y2, x3, y3: พิกัด (x, y) ของสามจุดที่รู้ตำแหน่ง ซึ่งจะใช้ในการคำนวณหาตำแหน่งของจุดที่ไม่ทราบตำแหน่ง
+    
+    def trilateration(self, d1, d2, d3, x1, y1, x2, y2, x3, y3): 
             A = x1**2 + y1**2 - d1**2
             B = x2**2 + y2**2 - d2**2
             C = x3**2 + y3**2 - d3**2

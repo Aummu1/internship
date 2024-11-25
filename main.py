@@ -1,5 +1,5 @@
-# from jnius import autoclass
-# import jnius_config
+from jnius import autoclass
+import jnius_config
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -12,9 +12,9 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.uix.datatables import MDDataTable
 import requests
-import asyncio
-import threading
-from bleak import BleakScanner
+# import asyncio
+# import threading
+# from bleak import BleakScanner
 import math
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
@@ -155,8 +155,7 @@ MDBoxLayout:
                         orientation: 'vertical'
                         size_hint_y: None
                         height: self.minimum_height  # Allow it to adjust height based on content
-
-                        # บรรทัดนี้บอกว่า MovingWaveShadowWidget อยู่ในหน้า CSI
+        
                         MovingWaveShadowWidget:
                             # id: csi_widget
                             size_hint: (1, None) 
@@ -203,10 +202,10 @@ MDBoxLayout:
         pos_hint: {"center_x": 0.5, "center_y": 0.4}
         on_release: 
             root.manager.current = 'Clientstable'
-                
+                   
 <ClientsTable>:
     name: 'Clientstable'
-
+ 
 '''
 
 class DemoPage(Screen):
@@ -217,123 +216,12 @@ sm.add_widget(DemoPage(name='demopage'))
 
 # รันบน Window
 # if platform == "window":
-
-class MovingWaveShadowWidget(Widget):
-    def __init__(self, **kwargs):
-        super(MovingWaveShadowWidget, self).__init__(**kwargs)
-        self.x_pos = 400  # ตำแหน่งเริ่มต้นของก้อน
-        self.y_pos = 300
-        self.speed_x = 0.5  # ลดความเร็วในทิศทาง X
-        self.speed_y = 0.25  # ลดความเร็วในทิศทาง Y
-        self.time = 0  # ใช้สำหรับการทำให้เกิดคลื่น
-
-        with self.canvas:
-            # Add map picture
-            self.image = Image(source='imagemap.png', allow_stretch=True, keep_ratio=True)
-
-            # ขยายความสูงของภาพให้เต็มหน้าจอ
-            self.image.height = Window.height * 0.8  # ตั้งความสูงเป็นขนาดหน้าจอ
-            aspect_ratio = self.image.texture_size[0] / self.image.texture_size[1]  # คำนวณอัตราส่วนภาพ
-            self.image.width = self.image.height * aspect_ratio  # คำนวณความกว้างตามอัตราส่วน
-
-            # คำนวณตำแหน่งให้อยู่กลางหน้าจอ
-            self.image.pos = ((Window.width - self.image.width) / 2, 0)  # ให้ตำแหน่ง x อยู่กลางหน้าจอ
-
-            self.add_widget(self.image)
-
-            # กำหนดตำแหน่งของการเลื่อน
-            self.translation = Translate(self.x_pos, self.y_pos)
-            
-            # ฟังก์ชันสร้าง Mesh สำหรับวงกลม
-            def create_circle_mesh(radius, num_points=50):
-                vertices = []
-                angle_step = 2 * math.pi / num_points
-                for i in range(num_points):
-                    angle = i * angle_step
-                    x = radius * math.cos(angle)
-                    y = radius * math.sin(angle)
-                    vertices.extend([x, y])
-                return vertices
-
-            # เพิ่มเงาจาง ๆ ด้านนอกสุด
-            Color(0, 0, 0, 0.2)
-            vertices_blur = create_circle_mesh(70)
-            self.outer_shadow_blur = Mesh(
-                vertices=vertices_blur,
-                indices=[i for i in range(len(vertices_blur) // 2)],
-                mode='triangle_fan'
-            )
-
-            # ชั้นที่ 1: สีด้านนอกสุด
-            Color(142 / 255, 174 / 255, 219 / 255)  # น้ำเงิน
-            vertices_outer = create_circle_mesh(50)
-            self.outer_shadow = Mesh(
-                vertices=vertices_outer,
-                indices=[i for i in range(len(vertices_outer) // 2)],
-                mode='triangle_fan'
-            )
-
-            # ชั้นที่ 2: สีชั้นกลาง
-            Color(114 / 255, 151 / 255, 207 / 255)  # น้ำเงิน
-            vertices_middle = create_circle_mesh(35)
-            self.middle_shadow = Mesh(
-                vertices=vertices_middle,
-                indices=[i for i in range(len(vertices_middle) // 2)],
-                mode='triangle_fan'
-            )
-
-            # ชั้นที่ 3: สีชั้นในสุด
-            Color(84 / 255, 125 / 255, 189 / 255)  # น้ำเงิน
-            vertices_inner = create_circle_mesh(20)
-            self.inner_shadow = Mesh(
-                vertices=vertices_inner,
-                indices=[i for i in range(len(vertices_inner) // 2)],
-                mode='triangle_fan'
-            )
-
-        # ตรวจจับการเปลี่ยนแปลงขนาดของหน้าต่าง
-        Window.bind(on_resize=self.update_background)
-
-    def update(self, dt):
-        # อัปเดตตำแหน่งของก้อนเงา
-        self.x_pos += self.speed_x
-        self.y_pos += self.speed_y
-
-        # ตรวจสอบการชนกับขอบหน้าต่าง
-        if self.x_pos > Window.width - 60 or self.x_pos < 0:
-            self.speed_x = -self.speed_x
-        if self.y_pos > Window.height - 60 or self.y_pos < 0:
-            self.speed_y = -self.speed_y
-
-        # สร้างคลื่นที่มีการแกว่ง
-        self.time += dt
-        y_offset = 30 * math.sin(self.time)
-
-        # อัปเดตตำแหน่งการเลื่อน
-        self.translation.x = self.x_pos
-        self.translation.y = self.y_pos + y_offset
-
-    def update_background(self, *args):
-        # อัปเดตขนาดของภาพเมื่อขนาดหน้าต่างเปลี่ยน
-        self.image.height = Window.height*0.82  # ตั้งความสูงเป็นขนาดหน้าจอ
-        aspect_ratio = self.image.texture_size[0] / self.image.texture_size[1]  # คำนวณอัตราส่วนภาพ
-        self.image.width = self.image.height * aspect_ratio  # คำนวณความกว้างตามอัตราส่วน
-
-        # คำนวณตำแหน่งกลางเมื่อขนาดหน้าต่างเปลี่ยน
-        self.image.pos = ((Window.width - self.image.width) / 2, 0)
-
-
-
-# ------------------------------------------------------------------------------------------------------
-
-
-
 class MapWidget(Widget):
     def __init__(self, **kwargs):
         super(MapWidget, self).__init__(**kwargs)
         
         # add map picture
-        self.image = Image(source='imagemap.png', allow_stretch=True, keep_ratio=True)
+        self.image = Image(source='imagemap5.png', allow_stretch=True, keep_ratio=True)
         self.image.size_hint = (None, None)  
         self.image.size = (self.width, self.height) 
         self.image.pos_hint = {"center_x": .5, "top": 0.5}  
@@ -466,8 +354,6 @@ class MapWidget(Widget):
         self.coord_label_P.text = f"({real_coord[0]}, {real_coord[1]})"
         self.coord_label_P.pos = (x-48, y-78)
 
-# -------------------------------------------------------------------------------------------------
-
 class ClientsTable(Screen):
     def load_table(self):
         layout = AnchorLayout()
@@ -491,7 +377,6 @@ class ClientsTable(Screen):
         self.add_widget(self.data_tables)
         return layout
         
-        # bluetooth name 
     async def async_scan_devices(self):
         scanner = BleakScanner()
         self.target_device_names = ["P2N_09725", "P2N_09714", "ZLB_39612"]
@@ -505,24 +390,21 @@ sm = ScreenManager()
 sm.add_widget(DemoPage(name='demopage'))
 sm.add_widget(ClientsTable(name='Clientstable'))
 
-# ---------------------------------------------------------------------------------------------------
-
 class MyApp(MDApp):
     def build(self):
         self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Pink"
+        self.theme_cls.primary_palette = "Amber"
         self.scanning = False
         self.target_device_names = ["P2N_09725", "P2N_09714", "ZLB_39612"]
         return Builder.load_string(KV)
     
     def switch_theme_style(self):
-        self.theme_cls.primary_palette = ("Pink" if self.theme_cls.primary_palette == "Blue" else "Blue")
+        self.theme_cls.primary_palette = ("Orange" if self.theme_cls.primary_palette == "Blue" else "Blue")
         self.theme_cls.theme_style = ("Dark" if self.theme_cls.theme_style == "Light" else "Light")
 
     def close_application(self):
         App.get_running_app().stop()
 
-    # ตรวจสอบว่าขณะนี้กำลังสแกนอุปกรณ์ Bluetooth อยู่หรือไม่ (self.scanning) ถ้าไม่กำลังสแกน จะเริ่มกระบวนการสแกน
     def start_service(self):
         if not self.scanning:
             self.root.ids.label.text = ""  # Clear the previous scan results
@@ -532,27 +414,20 @@ class MyApp(MDApp):
 
     def scan_devices(self):
         self.root.ids.status.text = "Scanning..."
-        devices = asyncio.run(self.async_scan_devices()) # เรียกใช้ฟังก์ชัน async_scan_devices ซึ่งเป็นฟังก์ชันแบบ Asynchronous ผ่าน asyncio.run เพื่อค้นหาอุปกรณ์
+        devices = asyncio.run(self.async_scan_devices())
         Clock.schedule_once(lambda dt: self.display_scan_results(devices), 0)
         self.scanning = False
 
-    # สร้างอินสแตนซ์ของ BleakScanner ซึ่งใช้สำหรับค้นหาอุปกรณ์ Bluetooth LE
     async def async_scan_devices(self):
         scanner = BleakScanner()
-        # ตั้งค่าฟิลเตอร์ device_filter เพื่อกรองเฉพาะอุปกรณ์ที่มีชื่ออยู่ใน self.target_device_names
-        scanner.device_filter = lambda device: device.name in self.target_device_names 
-        return await scanner.discover() # เริ่มการสแกนอุปกรณ์ Bluetooth และรอจนกว่าการค้นหาจะเสร็จสิ้น
+        scanner.device_filter = lambda device: device.name in self.target_device_names
+        return await scanner.discover()
     
-    # คำนวณ ระยะทาง จากค่า RSSI ที่ได้รับจากอุปกรณ์ Bluetooth.
     def calculate_distance(self, rssi, RSSI_0, n):
         ratio = (RSSI_0-rssi)/(10*n)
         return math.pow(10,ratio)
     
-    # เพื่อหาตำแหน่ง (x, y) ของจุดที่ไม่ทราบตำแหน่ง โดยใช้ข้อมูลจากระยะทางจาก สามจุดที่มีตำแหน่งที่รู้
-    # d1, d2, d3: ระยะทางจากแต่ละจุด (จากอุปกรณ์ที่รู้ตำแหน่งไปยังจุดที่เราต้องการหาตำแหน่ง)
-    # x1, y1, x2, y2, x3, y3: พิกัด (x, y) ของสามจุดที่รู้ตำแหน่ง ซึ่งจะใช้ในการคำนวณหาตำแหน่งของจุดที่ไม่ทราบตำแหน่ง
-    
-    def trilateration(self, d1, d2, d3, x1, y1, x2, y2, x3, y3): 
+    def trilateration(self, d1, d2, d3, x1, y1, x2, y2, x3, y3):
             A = x1**2 + y1**2 - d1**2
             B = x2**2 + y2**2 - d2**2
             C = x3**2 + y3**2 - d3**2
@@ -648,16 +523,11 @@ class MyApp(MDApp):
         # พล็อตจุดที่ตำแหน่ง
         map_widget = self.root.ids.map_widget
         map_widget.plot_point(*map_coordinate, real_coordinate) 
-    
-    def csi_polygon(self):
-        widget = MovingWaveShadowWidget()
-        Clock.schedule_interval(widget.update, 1 / 60)  # อัปเดตทุก 1/60 วินาที
-        return widget
 
     def send_data(self):
         self.scanning = False
         self.root.ids.status.text = "Sending data..."
-        for device in self.scan_devices: #scanned_devices
+        for device in self.scanned_devices:
             # Check if "rssi" key exists in the device dictionary
             if "rssi" in device:
                 rssi = device["rssi"]
@@ -711,7 +581,7 @@ class MyApp(MDApp):
         Logger.info('Bluetooth: Stop Scanning')
             
 if __name__ == "__main__":
-    MyApp().run()
+    MDApp().run()
 
 # รันบนมือถือ Android
 # if platform == "android":
@@ -839,10 +709,14 @@ if __name__ == "__main__":
             
 #             self.start_L_x, self.start_L_y = 131, 405
 #             self.start_R_x, self.start_R_y = 907, 405
+#             self.start_L2_x, self.start_L2_y = 131, 1378
+#             self.start_R2_x, self.start_R2_y = 907, 1378
             
 #             # Initialize labels but don't add them to the widget yet
 #             self.coord_label_L = Label(text=f"(0, 0)", size_hint=(None, None), color=(0, 0, 0, 1), font_size=24)
 #             self.coord_label_R = Label(text=f"(14.924, 0)", size_hint=(None, None), color=(0, 0, 0, 1), font_size=24)
+#             self.coord_label_L2 = Label(text=f"(0, 18.191)", size_hint=(None, None), color=(0, 0, 0, 1), font_size=24)
+#             self.coord_label_R2 = Label(text=f"(14.924, 18.191)", size_hint=(None, None), color=(0, 0, 0, 1), font_size=24)
 #             self.coord_label_P = Label(text=f"(0, 0)", size_hint=(None, None), color=(1, 0, 0, 1), font_size=24)        
 
 #             # use canvas to draw
@@ -855,6 +729,8 @@ if __name__ == "__main__":
 #                 Color(0, 0, 0, 1) # สีดำ
 #                 self.point_A1 = Ellipse(pos=(self.start_L_x-5, self.start_L_y-5), size=(15, 15))  
 #                 self.point_A2 = Ellipse(pos=(self.start_R_x-5, self.start_R_y-5), size=(15, 15))  
+#                 self.point_A3 = Ellipse(pos=(self.start_L2_x-5, self.start_L2_y-5), size=(15, 15))  
+#                 self.point_A4 = Ellipse(pos=(self.start_R2_x-5, self.start_R2_y-5), size=(15, 15))  
 #                 Color(1, 0, 0, 1) # สีแดง
 #                 self.point_Estimate = Ellipse(pos=(100, 100), size=(20, 20))  
     
@@ -867,12 +743,18 @@ if __name__ == "__main__":
 #             if not self.coord_label_L.parent:  # Check if the label is not displayed
 #                 self.coord_label_L.pos = (self.start_L_x - 48, self.start_L_y - 75)
 #                 self.coord_label_R.pos = (self.start_R_x - 48, self.start_R_y - 75)
+#                 self.coord_label_L2.pos = (self.start_L2_x - 48, self.start_L2_y - 75)
+#                 self.coord_label_R2.pos = (self.start_R2_x - 48, self.start_R2_y - 75)
 #                 self.add_widget(self.coord_label_L)  # Add labels when toggled on
 #                 self.add_widget(self.coord_label_R)
+#                 self.add_widget(self.coord_label_L2)
+#                 self.add_widget(self.coord_label_R2)
 #                 self.add_widget(self.coord_label_P)
 #             else:
 #                 self.remove_widget(self.coord_label_L)  # Remove when toggled off
 #                 self.remove_widget(self.coord_label_R)
+#                 self.remove_widget(self.coord_label_L2)  # Add labels when toggled on
+#                 self.remove_widget(self.coord_label_R2)
 #                 self.remove_widget(self.coord_label_P)
         
 #         # Draw the grid
@@ -880,6 +762,7 @@ if __name__ == "__main__":
 #             if not self.grid_drawn:
 #                 with self.canvas:
 #                     Color(0.5, 0.5, 0.5, 1) # สีดำ
+#                     # Color(1, 1, 1, 1)
 #                     num_cells_x = int(14.924 / 0.5)
 #                     num_cells_y = int(18.191 / 0.5)
 #                     grid_width = int(776 / num_cells_x) * 2
@@ -931,6 +814,7 @@ if __name__ == "__main__":
                         
 #                 with self.canvas:
 #                     Color(1, 0, 1, 1) # สีม่วง
+#                     # Color(0 / 255, 255 / 255, 255 / 255) 
 #                     for angle in range(0, 100, 10):
 #                         radians_angle = radians(angle)
 #                         end_R_x = self.start_R_x - length_line * cos(radians_angle)  
@@ -1066,7 +950,7 @@ if __name__ == "__main__":
 #                 self.connect_gatt(self.device)  # connect to device
 #                 Logger.info("Scan: completed")
 #                 # self.clear_devices()
-                    
+                       
 #         def on_device(self, device, rssi, advertisement):
 #             address = device.getAddress()
 #             name = device.getName()
@@ -1363,4 +1247,4 @@ if __name__ == "__main__":
 #             activity.startActivity(intent)
 
 # if __name__ == "__main__":
-#     MyApp().run()
+#     MDApp().run()
